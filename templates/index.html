@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mental Health Chatbot</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- 🌸 Favicon -->
+  <link rel="icon" type="image/png" href="static\favicon.png">
+  <!-- ✅ External CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="chat-container">
+    <h3 class="text-center text-primary mb-4">TheraAI 🧠</h3>
+    <div class="chat-box" id="chatBox">
+      <!-- ✅ Default welcome bot message -->
+      <div class="message-row" style="justify-content: flex-start;">
+        <div class="icon bot-icon">🌸</div>
+        <div class="message bot">Hi there 👋 I’m your supportive mental health assistant. How are you feeling today?</div>
+      </div>
+    </div>
+    <div class="input-group">
+      <input type="text" id="userInput" class="form-control" placeholder="Type your thoughts...">
+      <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+ <!-- 🌿 Footer Section -->
+<footer class="app-footer">
+  <p class="mb-1">💚 Remember: You are not alone. Take things one step at a time.</p>
+  <small>
+    ⚠️ Disclaimer: TheraAI is a supportive assistant, not a replacement for professional mental health care.  
+    If you are in crisis or need urgent help, please contact a mental health professional or emergency services immediately.
+  </small>
+</footer>
+
+
+  <script>
+    // ✅ Focus cursor into chat input on page load
+    window.onload = () => {
+      document.getElementById("userInput").focus();
+    };
+
+    function scrollToBottom() {
+      const chatBox = document.getElementById("chatBox");
+      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+    }
+
+    async function typeText(element, text, delay = 30) {
+      for (let i = 0; i < text.length; i++) {
+        element.innerHTML += text.charAt(i);
+        scrollToBottom();
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chatBox = document.getElementById("chatBox");
+
+      chatBox.innerHTML += `
+        <div class="message-row" style="justify-content: flex-end;">
+          <div class="message user">${message}</div>
+          <div class="icon user-icon">👤</div>
+        </div>`;
+      input.value = "";
+      scrollToBottom();
+
+      const typingId = "typing-" + Date.now();
+      chatBox.innerHTML += `
+        <div class="message-row" style="justify-content: flex-start;" id="${typingId}">
+          <div class="icon bot-icon">🌸</div>
+          <div class="message bot">
+            <div class="typing"><span></span><span></span><span></span></div>
+          </div>
+        </div>`;
+      scrollToBottom();
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+
+      const typingEl = document.getElementById(typingId);
+      if (typingEl) {
+        typingEl.outerHTML = `
+          <div class="message-row" style="justify-content: flex-start;">
+            <div class="icon bot-icon">🌸</div>
+            <div class="message bot" id="reply-${typingId}"></div>
+          </div>`;
+      }
+
+      const replyBox = document.getElementById("reply-" + typingId);
+      if (replyBox) {
+        await typeText(replyBox, data.reply, 35);
+      }
+    }
+
+    document.getElementById("userInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
